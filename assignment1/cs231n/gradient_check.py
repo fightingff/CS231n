@@ -1,6 +1,5 @@
 from __future__ import print_function
 from builtins import range
-from past.builtins import xrange
 
 import numpy as np
 from random import randrange
@@ -128,6 +127,6 @@ def grad_check_sparse(f, x, analytic_grad, num_checks=10, h=1e-5):
             abs(grad_numerical) + abs(grad_analytic)
         )
         print(
-            "numerical: %f analytic: %f, relative error: %e"
-            % (grad_numerical, grad_analytic, rel_error)
+            "numerical: %f analytic: %f, relative error: %f %%"
+            % (grad_numerical, grad_analytic, rel_error*100)
         )
