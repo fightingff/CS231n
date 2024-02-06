@@ -33,7 +33,23 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = X.shape[0]
+    score = X @ W
+    for i in range(N):
+        score_i = score[i]
+        score_i -= np.max(score_i)
+        score_i = np.exp(score_i)
+        score_i /= np.sum(score_i)
+        loss += -np.log(score_i[y[i]])
+
+        for j in range(W.shape[1]):
+            dW[:, j] += X[i] * score_i[j]
+        dW[:, y[i]] -= X[i]
+
+    loss /= N
+    loss += 0.5 * reg * np.sum(W * W)
+    dW /= N
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -58,7 +74,20 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = X.shape[0]
+    score = X @ W
+    score -= np.max(score, axis=1, keepdims=True)
+    score = np.exp(score)
+    score /= np.sum(score, axis=1, keepdims=True)
+
+    loss = -np.log(score[np.arange(N), y]).sum()
+    loss /= N
+    loss += 0.5 * reg * np.sum(W * W)
+
+    score[np.arange(N), y] -= 1
+    dW = X.T @ score
+    dW /= N
+    dW += reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
