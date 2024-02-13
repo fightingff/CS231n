@@ -1,4 +1,7 @@
 # My work in Learning CS231n
-------------
 
-## K-NN
+---
+
+## [My Notebook](https://fightingff.github.io/notebooks/CS231n/)
+
+## Assignment1 Finished
