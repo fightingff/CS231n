@@ -74,8 +74,28 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        W = np.random.normal(0, weight_scale, (input_dim, hidden_dims[0]))
+        b = np.zeros(hidden_dims[0])
+        self.params['W1'] = W
+        self.params['b1'] = b
 
+        # TODO: normalization
+        # if self.normalization:
+        #     self.params['gamma1'] = np.ones(hidden_dims[0])
+        #     self.params['beta1'] = np.zeros(hidden_dims[0])
+
+        hidden_dims.append(num_classes)
+        for i in range(1, self.num_layers):
+            W = np.random.normal(0, weight_scale, (hidden_dims[i - 1], hidden_dims[i]))
+            b = np.zeros(hidden_dims[i])
+            self.params[f'W{i + 1}'] = W
+            self.params[f'b{i + 1}'] = b
+
+            # TODO: normalization
+            # if self.normalization:
+            #     self.params[f'gamma{i + 1}'] = np.ones(hidden_dims[i])
+            #     self.params[f'beta{i + 1}'] = np.zeros(hidden_dims[i])
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -148,7 +168,30 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        N = X.shape[0]
+        Vx = X.reshape(N, -1)
+        out = Vx
+        cache = {}
+        last = self.num_layers
+
+        for i in range(1, last):
+            W = self.params[f'W{i}']
+            b = self.params[f'b{i}']
+            out, cache[i] = affine_relu_forward(out, W, b)
+
+            # TODO: else
+            # if self.normalization:
+            #     gamma = self.params[f'gamma{i}']
+            #     beta = self.params[f'beta{i}']
+            #     out, cache[i] = affine_norm_relu_forward(out, W, b, gamma, beta, self.normalization, self.bn_params[i - 1])
+            # else:
+            #     out, cache[i] = affine_relu_forward(out, W, b)
+            # if self.use_dropout:
+            #     out, cache[f'dropout{i}'] = dropout_forward(out, self.dropout_param)
+
+        W = self.params[f'W{last}']
+        b = self.params[f'b{last}']
+        out, cache[last] = affine_forward(out, W, b)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -157,7 +200,7 @@ class FullyConnectedNet(object):
 
         # If test mode return early.
         if mode == "test":
-            return scores
+            return out
 
         loss, grads = 0.0, {}
         ############################################################################
@@ -175,7 +218,28 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dout = softmax_loss(out, y)
+        for i in range(1, self.num_layers + 1):
+            W = self.params[f'W{i}']
+            loss += 0.5 * self.reg * np.sum(W ** 2)
+        
+        dout, grads[f'W{last}'], grads[f'b{last}'] = affine_backward(dout, cache[last])
+        grads[f'W{last}'] += self.reg * self.params[f'W{last}']
+
+        for i in range(last - 1, 0, -1):
+            W = self.params[f'W{i}']
+            b = self.params[f'b{i}']
+            dout, grads[f'W{i}'], grads[f'b{i}'] = affine_relu_backward(dout, cache[i])
+            grads[f'W{i}'] += self.reg * self.params[f'W{i}']
+
+            # TODO: else    
+            # if self.use_dropout:
+            #     dout = dropout_backward(dout, cache[f'dropout{i}'])
+            # if self.normalization:
+            #     dout, grads[f'dW{i}'], grads[f'db{i}'], grads[f'dgamma{i}'], grads[f'dbeta{i}'] = affine_norm_relu_backward(dout, cache[i], self.normalization)
+            # else:
+            #     dout, grads[f'dW{i}'], grads[f'db{i}'] = affine_relu_backward(dout, cache[i])
+            # grads[f'dW{i}'] += self.reg * self.params[f'W{i}']
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
