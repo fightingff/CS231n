@@ -116,9 +116,7 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    dx = np.zeros(x.shape)
-    dx[x > 0] = 1
-    dx *= dout
+    dx = dout * (x>0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -237,7 +235,15 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        sample_mean = np.mean(x, axis=0)
+        sample_var = np.var(x, axis=0)
+        x_n = (x - sample_mean) / np.sqrt(sample_var + eps)
+        out = x_n * gamma + beta
+
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+        
+        cache = (x, gamma, beta, sample_mean, sample_var, eps, x_n, out)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -252,7 +258,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out = (x - running_mean) / np.sqrt(running_var + eps)
+        out = out * gamma + beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -293,7 +300,35 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, gamma, beta, sample_mean, sample_var, eps, x_n, out = cache
+    N, D = x.shape
+    # reference https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    sigma = np.sqrt(sample_var + eps)
+    x_mu = x - sample_mean
+
+    dbeta = np.sum(dout, axis=0)
+    dgammax = dout
+
+    dgamma = np.sum(x_n * dgammax, axis=0)
+    dxn = gamma * dgammax
+
+    dx_mu_1 = dxn / sigma
+    disigma = np.sum(dxn * x_mu, axis=0)
+
+    dsigma = -1 / (sigma ** 2) * disigma
+
+    dvar = 0.5 / sigma * dsigma
+
+    dsq = 1 / N * np.ones((N, D)) * dvar
+
+    dx_mu_2 = 2 * x_mu * dsq
+
+    dmu = -1 * np.sum(dx_mu_1 + dx_mu_2, axis=0)
+    dx_1 = dx_mu_1 + dx_mu_2
+
+    dx_2 = 1 / N * np.ones((N, D)) * dmu
+
+    dx = dx_1 + dx_2
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -327,7 +362,16 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, gamma, beta, sample_mean, sample_var, eps, x_n, out = cache
+    N, D = x.shape
+    sigma = np.sqrt(sample_var + eps)
+    xmu = x - sample_mean
+    
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(x_n * dout, axis=0)
+
+    dx = (1. / N) * gamma / sigma * (N * dout - np.sum(dout, axis=0) - xmu / (sample_var + eps) * np.sum(dout * xmu, axis=0))
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
