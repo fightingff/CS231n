@@ -149,7 +149,7 @@ class FullyConnectedNet(object):
         if self.normalization:
             for bn_param in self.bn_params:
                 bn_param["mode"] = mode
-        scores = None
+
         ############################################################################
         # TODO: Implement the forward pass for the fully connected net, computing  #
         # the class scores for X and storing them in the scores variable.          #
@@ -181,8 +181,8 @@ class FullyConnectedNet(object):
                 out, cache[i] = affine_norm_relu_forward(out, W, b, gamma, beta, bn_param, self.normalization)
             else:
                 out, cache[i] = affine_relu_forward(out, W, b)
-            # if self.use_dropout:
-            #     out, cache[f'dropout{i}'] = dropout_forward(out, self.dropout_param)
+            if self.use_dropout:
+                out, cache[f'dropout{i}'] = dropout_forward(out, self.dropout_param)
 
         W = self.params[f'W{last}']
         b = self.params[f'b{last}']
@@ -225,8 +225,8 @@ class FullyConnectedNet(object):
             W = self.params[f'W{i}']
             b = self.params[f'b{i}']
 
-            # if self.use_dropout:
-            #     dout = dropout_backward(dout, cache[f'dropout{i}'])
+            if self.use_dropout:
+                dout = dropout_backward(dout, cache[f'dropout{i}'])
             if self.normalization:
                 dout, grads[f'W{i}'], grads[f'b{i}'], grads[f'gamma{i}'], grads[f'beta{i}'] = affine_norm_relu_backward(dout, cache[i], self.normalization)
             else:
