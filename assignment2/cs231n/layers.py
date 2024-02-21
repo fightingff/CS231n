@@ -165,7 +165,7 @@ def softmax_loss(x, y):
     return loss, dx
 
 
-def batchnorm_forward(x, gamma, beta, bn_param):
+def batchnorm_forward(x, gamma, beta, bn_param, axis=0):
     """Forward pass for batch normalization.
 
     During training the sample mean and (uncorrected) sample variance are
@@ -240,8 +240,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         x_n = (x - sample_mean) / np.sqrt(sample_var + eps)
         out = x_n * gamma + beta
 
-        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
-        running_var = momentum * running_var + (1 - momentum) * sample_var
+        if not axis:
+          running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+          running_var = momentum * running_var + (1 - momentum) * sample_var
         
         cache = (x, gamma, beta, sample_mean, sample_var, eps, x_n, out)
 
@@ -275,7 +276,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     return out, cache
 
 
-def batchnorm_backward(dout, cache):
+def batchnorm_backward(dout, cache, axis=0):
     """Backward pass for batch normalization.
 
     For this implementation, you should write out a computation graph for
@@ -306,10 +307,10 @@ def batchnorm_backward(dout, cache):
     sigma = np.sqrt(sample_var + eps)
     x_mu = x - sample_mean
 
-    dbeta = np.sum(dout, axis=0)
+    dbeta = np.sum(dout, axis=axis)
     dgammax = dout
 
-    dgamma = np.sum(x_n * dgammax, axis=0)
+    dgamma = np.sum(x_n * dgammax, axis=axis)
     dxn = gamma * dgammax
 
     dx_mu_1 = dxn / sigma
@@ -338,7 +339,7 @@ def batchnorm_backward(dout, cache):
     return dx, dgamma, dbeta
 
 
-def batchnorm_backward_alt(dout, cache):
+def batchnorm_backward_alt(dout, cache, axis=0):
     """Alternative backward pass for batch normalization.
 
     For this implementation you should work out the derivatives for the batch
@@ -367,11 +368,13 @@ def batchnorm_backward_alt(dout, cache):
     sigma = np.sqrt(sample_var + eps)
     xmu = x - sample_mean
     
-    dbeta = np.sum(dout, axis=0)
-    dgamma = np.sum(x_n * dout, axis=0)
+    dbeta = np.sum(dout, axis=axis)
+    dgamma = np.sum(x_n * dout, axis=axis)
 
-    dx = (1. / N) * gamma / sigma * (N * dout - np.sum(dout, axis=0) - xmu / (sample_var + eps) * np.sum(dout * xmu, axis=0))
-    
+    dx_n = dout * gamma
+    dsigma = -0.5 * np.sum(dx_n * xmu, axis=0) / (sigma ** 3)
+    dmu = -np.sum(dx_n / sigma, axis=0) - 2 * dsigma * np.sum(xmu, axis=0) / N
+    dx = dx_n / sigma + 2.0 * dsigma * xmu / N + dmu / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -415,8 +418,9 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    ln_param['mode'] = 'train'
+    out, cache = batchnorm_forward(x.T, gamma.reshape(-1, 1), beta.reshape(-1, 1), ln_param, axis=1)
+    out = out.T
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -450,7 +454,8 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx, dgamma, dbeta = batchnorm_backward_alt(dout.T, cache, axis=1)
+    dx = dx.T
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

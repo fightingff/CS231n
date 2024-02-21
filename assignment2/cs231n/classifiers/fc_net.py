@@ -114,10 +114,8 @@ class FullyConnectedNet(object):
         # of the first batch normalization layer, self.bn_params[1] to the forward
         # pass of the second batch normalization layer, etc.
         self.bn_params = []
-        if self.normalization == "batchnorm":
+        if self.normalization:
             self.bn_params = [{"mode": "train"} for i in range(self.num_layers - 1)]
-        if self.normalization == "layernorm":
-            self.bn_params = [{} for i in range(self.num_layers - 1)]
 
         # Cast all parameters to the correct datatype.
         for k, v in self.params.items():
@@ -148,7 +146,7 @@ class FullyConnectedNet(object):
         # behave differently during training and testing.
         if self.use_dropout:
             self.dropout_param["mode"] = mode
-        if self.normalization == "batchnorm":
+        if self.normalization:
             for bn_param in self.bn_params:
                 bn_param["mode"] = mode
         scores = None
@@ -180,7 +178,7 @@ class FullyConnectedNet(object):
                 gamma = self.params[f'gamma{i}']
                 beta = self.params[f'beta{i}']
                 bn_param = self.bn_params[i - 1]
-                out, cache[i] = affine_norm_relu_forward(out, W, b, gamma, beta, bn_param)
+                out, cache[i] = affine_norm_relu_forward(out, W, b, gamma, beta, bn_param, self.normalization)
             else:
                 out, cache[i] = affine_relu_forward(out, W, b)
             # if self.use_dropout:
@@ -230,7 +228,7 @@ class FullyConnectedNet(object):
             # if self.use_dropout:
             #     dout = dropout_backward(dout, cache[f'dropout{i}'])
             if self.normalization:
-                dout, grads[f'W{i}'], grads[f'b{i}'], grads[f'gamma{i}'], grads[f'beta{i}'] = affine_norm_relu_backward(dout, cache[i])
+                dout, grads[f'W{i}'], grads[f'b{i}'], grads[f'gamma{i}'], grads[f'beta{i}'] = affine_norm_relu_backward(dout, cache[i], self.normalization)
             else:
                 dout, grads[f'W{i}'], grads[f'b{i}'] = affine_relu_backward(dout, cache[i])
             grads[f'W{i}'] += self.reg * self.params[f'W{i}']
