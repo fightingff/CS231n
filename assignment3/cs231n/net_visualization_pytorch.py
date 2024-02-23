@@ -81,7 +81,15 @@ def make_fooling_image(X, target_y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    while True:
+        scores = model(X_fooling)
+        _, preds = scores.max(1)
+        if preds == target_y:
+            break
+        loss = scores[0, target_y]
+        loss.backward()
+        X_fooling.data += learning_rate * X_fooling.grad / X_fooling.grad.norm()
+        X_fooling.grad.zero_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -99,7 +107,12 @@ def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate)
     ########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = model(img)
+    loss = scores[0, target_y] - l2_reg * torch.norm(img)
+    loss.backward()
+    img.data += learning_rate * img.grad / img.grad.norm()
+    img.grad.zero_()
+    return img
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ########################################################################
