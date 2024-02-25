@@ -243,6 +243,15 @@ class CaptioningRNN:
                 captions[:, i] = np.argmax(scores, axis=1)
                 prev_word = captions[:, i]
                 prev_h = next_h
+        else:
+            prev_c = np.zeros_like(prev_h)
+            for i in range(1, max_length):
+                prev_word_embed, _ = word_embedding_forward(prev_word, W_embed)
+                next_h, next_c, _ = lstm_step_forward(prev_word_embed, prev_h, prev_c, Wx, Wh, b)
+                scores, _ = affine_forward(next_h, W_vocab, b_vocab)
+                captions[:, i] = np.argmax(scores, axis=1)
+                prev_word = captions[:, i]
+                prev_h, prev_c = next_h, next_c
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
