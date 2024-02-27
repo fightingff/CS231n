@@ -38,7 +38,10 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = 1 / (10000 ** (torch.arange(0, embed_dim, 2) / embed_dim))
+        pe[0, :, 0::2] = torch.sin(position * div_term)
+        pe[0, :, 1::2] = torch.cos(position * div_term)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -70,7 +73,8 @@ class PositionalEncoding(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        output = x + self.pe[:, :S, :].to(x.device)
+        output = self.dropout(output)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -165,7 +169,21 @@ class MultiHeadAttention(nn.Module):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        H = self.n_head
+        head_dim = self.head_dim
+        query = self.query(query).view(N, S, H, head_dim).transpose(1, 2)
+        key = self.key(key).view(N, T, H, head_dim).transpose(1, 2)
+        value = self.value(value).view(N, T, H, head_dim).transpose(1, 2)
+
+        attn = torch.matmul(query, key.transpose(2, 3)) / math.sqrt(head_dim)
+        if attn_mask is not None:
+            attn = attn.masked_fill(attn_mask == 0, float('-inf'))
+        attn = F.softmax(attn, dim=-1)
+        attn = self.attn_drop(attn)
+        output = torch.matmul(attn, value).transpose(1, 2).contiguous().view(N, S, E)
+
+        output = self.proj(output)
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
