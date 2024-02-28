@@ -1,3 +1,10 @@
 # dir
 */cs231n/datasets/
 */pretrained_model/
+*/data/
+
+# file
+*.gz
+*.tar
+*.zip
+*.npz
